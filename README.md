@@ -261,6 +261,3 @@ The IoT Alerting System is designed to process events from IoT devices, trigger 
    - Sensor details and authorized user data are cached in Redis to reduce database lookups.
 
 ---
-
-## License
-This project is licensed under the MIT License. See the LICENSE file for details.
