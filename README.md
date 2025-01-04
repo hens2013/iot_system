@@ -59,35 +59,37 @@ The IoT Alerting System is designed to process events from IoT devices, trigger 
    ```
    If Redis is running, the response will be `PONG`.
 
-2. **Set Up Environment Variables**:
-   Create a `.env` file in the root directory with the following content:
-   ```env
-   DATABASE_URL=postgresql://<username>:<password>@<host>:<port>/<database>
-   RABBITMQ_URL=amqp://<username>:<password>@<host>:<port>/
-   RABBITMQ_QUEUE=<queue-name>
-   REDIS_URL=redis://<host>:<port>/
-   ```
+### Environment Variables
+Create a `.env` file in the root directory with the following content:
+```env
+DATABASE_URL=postgresql://<username>:<password>@<host>:<port>/<database>
+RABBITMQ_URL=amqp://<username>:<password>@<host>:<port>/
+RABBITMQ_QUEUE=<queue-name>
+REDIS_URL=redis://<host>:<port>/
+```
 
-3. **Install Dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+### Install Dependencies
+```bash
+pip install -r requirements.txt
+```
 
-4. **Initialize the Database**:
-   ```bash
-   python -c "from services.db import init_db; init_db()"
-   ```
+### Initialize the Database
+```bash
+python -c "from services.db import init_db; init_db()"
+```
 
-5. **Run the Application**:
-   Start the FastAPI server:
-   ```bash
-   uvicorn alerting_service.app.alert_service_main:alerting_service_app --host 127.0.0.1 --port 8000 --reload
-   ```
+### Run the Application
+Start the FastAPI server:
+```bash
+uvicorn alerting_service.app.alert_service_main:alerting_service_app --host 127.0.0.1 --port 8000 --reload
+```
 
-6. **Start the RabbitMQ Consumer**:
-   ```bash
-   python -c "import asyncio; from services.consumer import RabbitMQConsumer; consumer = RabbitMQConsumer(); asyncio.run(consumer.connect())"
-   ```
+### Start the RabbitMQ Consumer
+```bash
+python -c "import asyncio; from services.consumer import RabbitMQConsumer; consumer = RabbitMQConsumer(); asyncio.run(consumer.connect())"
+```
+
+---
 
 ### Running with Docker
 1. **Install Docker**:
@@ -135,18 +137,17 @@ The IoT Alerting System is designed to process events from IoT devices, trigger 
 - **Method**: `POST`
 - **Description**: Creates an event, processes it, and generates alerts if applicable.
 - **Request Body**:
-  - Example for a motion detected event:
-    ```json
-    {
-      "device_id": "mac-address",
-      "timestamp": "2023-01-01T12:00:00",
-      "event_type": "motion_detected",
-      "meta_data": {
-        "confidence": 0.95,
-        "photo_base64": "<base64-string>"
-      }
+  ```json
+  {
+    "device_id": "mac-address",
+    "timestamp": "2023-01-01T12:00:00",
+    "event_type": "motion_detected",
+    "meta_data": {
+      "confidence": 0.95,
+      "photo_base64": "<base64-string>"
     }
-    ```
+  }
+  ```
 - **Response**:
   ```json
   {
@@ -155,102 +156,93 @@ The IoT Alerting System is designed to process events from IoT devices, trigger 
   }
   ```
 
-#### 3. **Get Events**
-- **Endpoint**: `/events/get_events`
-- **Method**: `GET`
-- **Description**: Retrieves events based on filters.
-- **Query Parameters**:
-  - `start_time` (optional): Start of the time range.
-  - `end_time` (optional): End of the time range.
-  - `event_type` (optional): Type of event.
-  - `device_type` (optional): Type of device.
-- **Response**:
-  ```json
-  {
-    "events": [
-      {
-        "device_id": "mac-address",
-        "timestamp": "2023-01-01T12:00:00",
-        "event_type": "motion_detected",
-        "meta_data": {
-          "confidence": 0.95
-        }
-      }
-    ]
-  }
-  ```
+---
 
-#### 4. **Get Alerts**
-- **Endpoint**: `/alerts/get_alerts`
-- **Method**: `GET`
-- **Description**: Retrieves alerts based on filters.
-- **Query Parameters**:
-  - `start_time` (optional): Start of the time range.
-  - `end_time` (optional): End of the time range.
-  - `event_type` (optional): Type of event.
-- **Response**:
-  ```json
-  {
-    "alerts": [
-      {
-        "alert_id": 1,
-        "event_type": "motion_detected",
-        "description": "Motion detected with high confidence: 0.95",
-        "meta_data": {
-          "confidence": 0.95
-        },
-        "created_at": "2023-01-01T12:00:00",
-        "photo": "<base64-encoded-photo>"
-      }
-    ]
-  }
-  ```
+## Common Issues and Resolutions
+
+### Error: Relation "events" does not exist
+If you encounter the following error during execution:
+```
+2025-01-04 15:50:41,264 - ERROR - Failed to create event: (psycopg2.errors.UndefinedTable) relation "events" does not exist
+```
+This indicates that the required database tables have not been created. You need to create the tables manually inside the Docker container.
+
+### Steps to Resolve
+1. **Access the Dockerized Database**:
+   Run the following command to access the database shell inside the Docker container:
+   ```bash
+   docker exec -it <postgres-container-name> psql -U <username> -d <database-name>
+   ```
+   Replace `<postgres-container-name>`, `<username>`, and `<database-name>` with the appropriate values for your setup.
+
+2. **Run the Table Creation Queries**:
+   Execute the following SQL queries in the database shell to create the required tables:
+   ```sql
+   -- Table: events
+   CREATE TABLE events (
+       id SERIAL PRIMARY KEY,
+       device_id VARCHAR NOT NULL,
+       timestamp TIMESTAMP NOT NULL,
+       event_type VARCHAR NOT NULL,
+       meta_data JSON
+   );
+
+   -- Table: photos
+   CREATE TABLE photos (
+       id SERIAL PRIMARY KEY,
+       uuid VARCHAR NOT NULL,
+       photo BYTEA NOT NULL
+   );
+
+   -- Table: alerts
+   CREATE TABLE alerts (
+       id SERIAL PRIMARY KEY,
+       event_type VARCHAR NOT NULL,
+       description VARCHAR NOT NULL,
+       meta_data JSON,
+       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+   );
+   ```
+
+3. **Verify the Tables**:
+   After running the queries, verify that the tables exist using the `\dt` command inside the PostgreSQL shell:
+   ```sql
+   \dt
+   ```
+
+4. **Restart the Application**:
+   Once the tables are created, restart the application services to ensure proper operation.
 
 ---
 
-## Alert Criteria
+## System Components
 
-### Criteria for Generating Alerts:
-1. **Access Attempt**:
-   - Triggered if the user attempting access is not authorized.
-   - Example:
-     - **Condition**: `user_id` not in authorized users list.
-     - **Alert**: Unauthorized access attempt.
+### FastAPI Application
+Provides RESTful APIs for creating and retrieving events and alerts.
 
-2. **Speed Violation**:
-   - Triggered if the speed exceeds 100 km/h.
-   - Example:
-     - **Condition**: `speed_kmh > 100`.
-     - **Alert**: Speed violation detected.
+### RabbitMQ
+Handles asynchronous message queuing for processing events.
 
-3. **Motion Detected**:
-   - Triggered if the confidence level of detected motion is greater than 0.9.
-   - Example:
-     - **Condition**: `confidence > 0.9`.
-     - **Alert**: Motion detected with high confidence.
+### PostgreSQL
+Stores events and alerts for persistence and querying.
+
+### Redis
+Caches sensor and user data for quick lookups.
 
 ---
 
-## System Explanation
+## Workflow
 
-### Components:
-1. **FastAPI Application**:
-   - Provides RESTful APIs for creating and retrieving events and alerts.
-2. **RabbitMQ**:
-   - Handles asynchronous message queuing for processing events.
-3. **PostgreSQL**:
-   - Stores events and alerts for persistence and querying.
-4. **Redis**:
-   - Caches sensor and user data for quick lookups.
-
-### Workflow:
 1. **Event Creation**:
-   - An event is sent to the `/events/` endpoint.
-   - The event is validated and published to RabbitMQ.
+   An event is sent to the `/events/` endpoint.
+   The event is validated and published to RabbitMQ.
+
 2. **Event Processing**:
-   - The RabbitMQ consumer processes the event and evaluates alert criteria.
-   - Alerts are stored in the database and can be retrieved via `/alerts/get_alerts`.
+   The RabbitMQ consumer processes the event and evaluates alert criteria.
+   Alerts are stored in the database and can be retrieved via `/alerts/get_alerts`.
+
 3. **Caching**:
-   - Sensor details and authorized user data are cached in Redis to reduce database lookups.
+   Sensor details and authorized user data are cached in Redis to reduce database lookups.
 
 ---
+
