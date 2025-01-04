@@ -59,13 +59,6 @@ The IoT Alerting System is designed to process events from IoT devices, trigger 
    ```
    If Redis is running, the response will be `PONG`.
 
-### Installation Steps
-1. **Clone the Repository**:
-   ```bash
-   git clone <repository-url>
-   cd <repository-directory>
-   ```
-
 2. **Set Up Environment Variables**:
    Create a `.env` file in the root directory with the following content:
    ```env
