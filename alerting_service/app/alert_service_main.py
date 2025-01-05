@@ -84,13 +84,3 @@ async def health_check():
     Health check endpoint to verify the service status.
     """
     return {"status": "ok", "message": "Alert Service is running"}
-
-
-# Run the application
-if __name__ == "__main__":
-    uvicorn.run(
-        "alerting_service.app.alert_service_main:alerting_service_app",
-        host="127.0.0.1",
-        port=8000,
-        reload=True,
-    )
