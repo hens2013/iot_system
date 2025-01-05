@@ -32,16 +32,3 @@ ingestion_service_app.include_router(events_router, prefix="/api/events", tags=[
 async def health_check():
     return {"status": "ok", "message": "Ingestion Service is running"}
 
-
-def main():
-    import uvicorn
-    uvicorn.run(
-        "ingestion_service_main:ingestion_service_app",
-        host="127.0.0.1",
-        port=8003,
-        reload=True
-    )
-
-
-if __name__ == "__main__":
-    main()
